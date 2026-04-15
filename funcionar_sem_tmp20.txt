@@ -30,6 +30,7 @@ apt update && apt upgrade -y
 
 bash
 apt install xfce4 xfce4-goodies lightdm -y
+apt install firefox-esr
 3.4. Após instalação, reiniciar:
 
 bash
@@ -59,13 +60,13 @@ bash
 nano /etc/default/grub
 Para processador Intel:
 
-text
+Para Intel:
 GRUB_CMDLINE_LINUX_DEFAULT="quiet intel_iommu=on iommu=pt pcie_acs_override=downstream,multifunction nofb nomodeset video=vesafb:off,efifb:off"
-Para processador AMD:
 
-text
+Para AMD:
 GRUB_CMDLINE_LINUX_DEFAULT="quiet amd_iommu=on iommu=pt pcie_acs_override=downstream,multifunction nofb nomodeset video=vesafb:off,efifb:off"
-6.2. Salvar (Ctrl+O, Enter, Ctrl+X) e atualizar GRUB:
+
+Salvar (Ctrl+O, Enter, Ctrl+X) e atualizar GRUB:
 
 bash
 update-grub
@@ -80,17 +81,24 @@ bash
 nano /etc/modules
 Adicionar:
 
-text
 vfio
 vfio_iommu_type1
 vfio_pci
 vfio_virqfd
 7.2. Salvar e reiniciar
+
+
+
+ATENÇÃO FAZER NA SEQUENCIA 7.3 EM DIANTE SOMENTE SE TIVER OUTRO PC PARA ACESSAR, CASO CONTRARIO CONFIGURE A VM PRIMEIRO PASSO 10
+
+
+
 7.3. (Opcional) Configurar parâmetros adicionais para IOMMU:
 
 bash
 echo "options vfio_iommu_type1 allow_unsafe_interrupts=1" > /etc/modprobe.d/iommu_unsafe_interrupts.conf
 echo "options kvm ignore_msrs=1" > /etc/modprobe.d/kvm.conf
+
 8. Bloquear Drivers de GPU do Host
 8.1. Editar blacklist:
 
@@ -103,7 +111,40 @@ blacklist radeon
 blacklist nouveau
 blacklist nvidia
 blacklist nvidiafb
+
+
+
 8.2. Salvar e reiniciar
+
+8.3
+Adding GPU to VFIO
+
+lspci -v(ver tudo)
+
+lspci -nn | grep -i amd/ati (PLACA DE VIDEO AMD)
+lspci -nn | grep -i nvidia/ati (PLACA DE VIDEO NVIDIA)
+lspci -nn | grep -i USB
+
+
+Procure o Endereço da sua Gpu Principal
+
+Rodar o Comando
+
+lspci -n -s 01:00
+
+Pegar o numero do ID e Fabricante
+
+Editar arquivo
+
+nano /etc/modprobe.d/vfio.conf
+
+options vfio-pci ids=1002:67ef,1002:aae0,8086:a36d disable_vga=1
+
+Rodar o comando
+
+update-initramfs -u
+
+Reiniciar o servidor.  ( reboot )
 
 9. Preparar ISOs para as VMs
 9.1. Baixar ISO do Windows 11 e VirtIO drivers:
@@ -151,3 +192,7 @@ Isso testa a leitura e gravação do disco
 
 14. Finalização e Personalização
 14.1. Agora é só instalar placa de vídeo, jogos ou fazer customizações adicionais e por aí vai...
+
+
+Verificar se Habilitou o IOMMU
+dmesg | grep -e DMAR -e IOMMU -e AMD-Vi
